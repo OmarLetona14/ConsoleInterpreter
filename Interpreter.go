@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -51,8 +52,12 @@ func recognize_command(commands []string) {
 			fmt.Println("Not supported command! ")
 			fmt.Println("You may say -path, press -help to see the list of commands avalibles")
 		}
+	case "rmdisk":
+		exec_mrdisk(commands)
+	case "fdisk":
+		exec_fdisk(commands)
 	case "pause":
-		fmt.Print("Executing paused \n Press any key to continue... ")
+		fmt.Print("Executing paused \nPress any key to continue... ")
 		reader := bufio.NewReader(os.Stdin)
 		x, _ := reader.ReadString('\n')
 		x += ""
@@ -62,20 +67,37 @@ func recognize_command(commands []string) {
 }
 
 type binaryFile struct {
-	size string
+	size int
 	path string
 	name string
 	unit string
 }
 
-func exec_mkdisk(com []string) {
+type partition struct {
+	size  string
+	unit  string
+	path  string
+	_type string
+	fit   string
+	name  string
+}
+
+func exec_fdisk(com []string) {
 	var new_disk binaryFile
 	for _, element := range com {
 		spplited_command := strings.Split(element, "=")
 		switch strings.ToLower(spplited_command[0]) {
 		case "-size":
-			new_disk.size = spplited_command[1]
-			fmt.Println("Disk size:", new_disk.size)
+			i, err := strconv.Atoi(spplited_command[1])
+			if i > 0 {
+				new_disk.size = i
+				fmt.Println("Disk size:", new_disk.size)
+			} else {
+				fmt.Println("Disk size must be positive")
+				return
+			}
+			log.Fatal(err)
+
 		case "-path":
 			new_disk.path = spplited_command[1]
 			fmt.Println("Disk path", new_disk.path)
@@ -84,7 +106,57 @@ func exec_mkdisk(com []string) {
 				new_disk.name = spplited_command[1]
 				fmt.Println("Disk name", new_disk.name)
 			} else {
-				fmt.Println("Error! name must have .dsk extension")
+				fmt.Println("Error! Name must have .dsk extension")
+			}
+		case "-unit":
+			new_disk.unit = spplited_command[1]
+			fmt.Println("Disk unit", new_disk.unit)
+		default:
+			if spplited_command[0] != "mkdisk" {
+				fmt.Println(spplited_command[0], "command unknow")
+			}
+		}
+	}
+	if new_disk.unit == "" {
+		new_disk.unit = "m"
+		fmt.Println("You dont especify an unit size")
+	}
+
+}
+
+func exec_mrdisk(com []string) {
+	splitted_command := strings.Split(com[1], "=")
+	if splitted_command[0] == "-path" {
+		file_name := splitted_command[1]
+		file_name += ""
+	} else {
+		fmt.Println(splitted_command[0], "command unknow")
+	}
+}
+
+func exec_mkdisk(com []string) {
+	var new_disk binaryFile
+	for _, element := range com {
+		spplited_command := strings.Split(element, "=")
+		switch strings.ToLower(spplited_command[0]) {
+		case "-size":
+			i, _ := strconv.Atoi(spplited_command[1])
+			if i > 0 {
+				new_disk.size = i
+				fmt.Println("Disk size:", new_disk.size)
+			} else {
+				fmt.Println("Size must be positive! ")
+				return
+			}
+		case "-path":
+			new_disk.path = spplited_command[1]
+			fmt.Println("Disk path", new_disk.path)
+		case "-name":
+			if strings.HasSuffix(spplited_command[1], ".dsk") {
+				new_disk.name = spplited_command[1]
+				fmt.Println("Disk name", new_disk.name)
+			} else {
+				fmt.Println("Error! Name must have .dsk extension")
 			}
 		case "-unit":
 			new_disk.unit = spplited_command[1]
